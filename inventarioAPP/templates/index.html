@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacientes</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* Button to access the API */
+        .btn-api {
+            background-color: #2575fc;
+            color: #fff;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-api:hover {
+            background-color: #6a11cb;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 3em;
+        }
+
+        /* Input Search Styling */
+        #search, #search-estado {
+            padding: 12px;
+            margin: 20px auto;
+            width: 300px;
+            border-radius: 25px;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #search:focus, #search-estado:focus {
+            border: 2px solid #2575fc;
+        }
+
+        /* Error message styling */
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            color: black;
+        }
+
+        th {
+            background-color: #2575fc;
+            color: #fff;
+        }
+
+        tr {
+            background-color: #f4f4f4;
+        }
+
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5em;
+            }
+            #search, #search-estado {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Button to access the API -->
+    <button class="btn-api" onclick="window.location.href='http://127.0.0.1:8000/api/pacientes/'">Ingresar Pacientes</button>
+
+    <h1>Pacientes</h1>
+
+    <!-- Buscador por RUT -->
+    <input type="text" id="search" placeholder="Buscar por RUT..." />
+
+    <!-- Buscador por Estado -->
+    <input type="text" id="search-estado" placeholder="Buscar por Estado..." />
+
+    <!-- Contenedor para mensajes de error -->
+    <div class="error" id="error-message"></div>
+
+    <!-- Tabla para mostrar los datos -->
+    <table>
+        <thead>
+            <tr>
+                <th>RUT</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Estado</th>
+                <th>Diagnóstico</th>
+                <th>Doctor</th>
+                <th>Fecha de Atención</th>
+                <th>Hora de Atención</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="pacientes-table">
+            <!-- Los datos se llenarán dinámicamente aquí -->
+        </tbody>
+    </table>
+
+    <script>
+        // Función para obtener los datos desde la API por RUT
+        async function fetchPacientePorRut(rut = '') {
+            const errorDiv = document.getElementById("error-message");
+            const tableBody = document.getElementById("pacientes-table");
+            errorDiv.textContent = ""; // Limpiar mensajes de error
+            tableBody.innerHTML = ""; // Limpiar tabla
+
+            try {
+                let url = "/api/pacientes/buscar_por_rut/";  // URL base
+                if (rut) {
+                    url += `?rut=${rut}`;  // Si hay un RUT, agregarlo como parámetro
+                }
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error("Error al obtener los datos");
+                }
+
+                const paciente = await response.json();
+
+                console.log(paciente);  // Verificar lo que se recibe de la API
+
+                // Verificar si hay un paciente
+                if (paciente.error) {
+                    errorDiv.textContent = paciente.error;  // Mostrar error si no se encuentra el paciente
+                    return;
+                }
+
+                // Llenar la tabla con los datos del paciente
+                const row = `
+                    <tr>
+                        <td>${paciente.rut}</td>
+                        <td>${paciente.nombres}</td>
+                        <td>${paciente.apellidos}</td>
+                        <td>${paciente.estado}</td>
+                        <td>${paciente.diagnostico}</td>
+                        <td>${paciente.doctor}</td>
+                        <td>${paciente.fecha}</td> 
+                        <td>${paciente.hora_ingreso}</td>
+                        <td>
+                            <button onclick="deletePaciente('${paciente.rut}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+            }
+        }
+
+        // Función para obtener los datos desde la API por Estado
+        async function fetchPacientePorEstado(estado = '') {
+            const errorDiv = document.getElementById("error-message");
+            const tableBody = document.getElementById("pacientes-table");
+            errorDiv.textContent = ""; // Limpiar mensajes de error
+            tableBody.innerHTML = ""; // Limpiar tabla
+
+            try {
+                let url = "/api/pacientes/estado_gripal/";  // URL base
+                if (estado) {
+                    url += `?estado=${estado}`;  // Si hay un estado, agregarlo como parámetro
+                }
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error("Error al obtener los datos");
+                }
+
+                const pacientes = await response.json();
+
+                // Verificar si hay pacientes
+                if (pacientes.length === 0) {
+                    errorDiv.textContent = "No se encontraron pacientes con ese estado.";
+                    return;
+                }
+
+                // Llenar la tabla con los datos de los pacientes
+                pacientes.forEach(paciente => {
+                    const row = `
+                        <tr>
+                            <td>${paciente.rut}</td>
+                            <td>${paciente.nombres}</td>
+                            <td>${paciente.apellidos}</td>
+                            <td>${paciente.estado}</td>
+                            <td>${paciente.diagnostico}</td>
+                            <td>${paciente.doctor}</td>
+                            <td>${paciente.fecha}</td> 
+                            <td>${paciente.hora_ingreso}</td>
+                            <td>
+                                <button onclick="deletePaciente('${paciente.rut}')">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+            }
+        }
+
+        // Función para eliminar un paciente
+        async function deletePaciente(rut) {
+            // Confirmación antes de eliminar
+            if (confirm("¿Estás seguro de que deseas eliminar este paciente?")) {
+                try {
+                    // Hacer la solicitud DELETE a la URL correcta
+                    const response = await fetch(`/api/pacientes/${rut}/`, {
+                        method: 'DELETE',  // Método DELETE
+                        headers: {
+                            'Content-Type': 'application/json',  // Tipo de contenido en la solicitud
+                        },
+                    });
+        
+                    if (!response.ok) {
+                        throw new Error("Error al eliminar el paciente");
+                    }
+        
+                    // Si la eliminación es exitosa, recargamos la lista de pacientes
+                    fetchPacientePorRut();  // Recargar la lista de pacientes
+                } catch (error) {
+                    alert(error.message);  // Mostrar mensaje de error si algo falla
+                }
+            }
+        }
+
+        // "Debounce" para retrasar la búsqueda mientras el usuario escribe
+        let timeout;
+
+        // Evento para el buscador de RUT
+        document.getElementById("search").addEventListener("input", (event) => {
+            const rut = event.target.value;
+            document.getElementById("error-message").textContent = '';  // Limpiar mensaje de error
+            if (rut.length === 0) {
+                document.getElementById("pacientes-table").innerHTML = "";
+                return;
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                fetchPacientePorRut(rut);
+            }, 500);
+        });
+
+        // Evento para el buscador de Estado
+        document.getElementById("search-estado").addEventListener("input", (event) => {
+            const estado = event.target.value;
+            document.getElementById("error-message").textContent = '';  // Limpiar mensaje de error
+            if (estado.length === 0) {
+                document.getElementById("pacientes-table").innerHTML = "";
+                return;
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                fetchPacientePorEstado(estado);
+            }, 500);
+        });
+
+    </script>
+</body>
+</html>
